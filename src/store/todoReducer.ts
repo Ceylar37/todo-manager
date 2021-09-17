@@ -8,50 +8,54 @@ export interface ITodo {
     completed: boolean
 }
 
-interface ITodoList {
-    todoListId: string,
-    todoListName: string,
-    todoList: ITodo[]
+export interface ITodoList {
+    id: string,
+    name: string,
+    value: ITodo[]
 }
-
+export interface IFilter {
+    'Only Completed': boolean,
+    'Only Not Completed': boolean
+}
 export const firstTodoListId = v1()
 export const secondTodoListId = v1()
 
 export const todoInitialState = {
     todoLists: [
-        {todoListId: firstTodoListId, todoListName: 'first list', todoList: []},
-        {todoListId: secondTodoListId, todoListName: 'second list', todoList: []}
+        {id: firstTodoListId, name: 'first list', value: [
+            {id: v1(), title: 'delectus aut autem', completed: false},
+            {id: v1(), title: 'quis ut nam facilis et officia qui', completed: true},
+            {id: v1(), title: 'fugiat veniam minus', completed: false}
+            ]},
+        {id: secondTodoListId, name: 'second list', value: [
+                {id: v1(), title: 'et porro tempora', completed: true},
+                {id: v1(), title: 'laboriosam mollitia et enim quasi adipisci quia provident illum', completed: false},
+                {id: v1(), title: 'qui ullam ratione quibusdam voluptatem quia omnis', completed: false}
+            ]}
     ] as ITodoList[],
     currentTodoListId: firstTodoListId as string,
-    error: '' as string
+    filters: {
+        'Only Completed': false,
+        'Only Not Completed': false
+    } as IFilter
 }
 
-interface IAddTodoList {
-    todoListName: string,
-}
-
-interface IAddTodoToList {
-    todoTitle: string
-}
-
-interface IChangeCurrentTodoListId {
-    newCurrentId: string
-}
-
-interface IMarkTodoOrDeleteTodo {
-    todoId: string
-}
+interface IAddTodoList {todoListName: string,}
+interface IAddTodoToList {todoTitle: string}
+interface IChangeCurrentTodoListId {newCurrentId: string}
+interface IMarkTodoOrDeleteTodo {todoId: string}
+interface IChangeFilter {filter: string}
 
 const todoSlice = createSlice({
     name: 'todo',
     initialState: todoInitialState,
     reducers: {
         addTodoList: (state, action: PayloadAction<IAddTodoList>) => {
-            state.todoLists.push({todoListId: v1(), todoListName: action.payload.todoListName, todoList: []})
+            state.todoLists.push({id: v1(), name: action.payload.todoListName, value: []})
         },
         addTodoToList: (state, action: PayloadAction<IAddTodoToList>) => {
             const currentTodoList = takeCurrentTodoList(state.todoLists, state.currentTodoListId)
-            if (currentTodoList) currentTodoList.todoList.push({
+            if (currentTodoList) currentTodoList.value.push({
                 id: v1(),
                 title: action.payload.todoTitle,
                 completed: false
@@ -63,7 +67,7 @@ const todoSlice = createSlice({
         markTodo: (state, action: PayloadAction<IMarkTodoOrDeleteTodo>) => {
             try {
                 const currentTodoList = takeCurrentTodoList(state.todoLists, state.currentTodoListId)
-                const currentTodo = takeCurrentTodo(currentTodoList.todoList, action.payload.todoId)
+                const currentTodo = takeCurrentTodo(currentTodoList.value, action.payload.todoId)
                 currentTodo.completed = !currentTodo.completed
             } catch (e) {
                 alert(e)
@@ -71,20 +75,27 @@ const todoSlice = createSlice({
         },
         deleteTodo: (state, action: PayloadAction<IMarkTodoOrDeleteTodo>) => {
             try {
-                const currentTodoList = takeCurrentTodoList(state.todoLists, state.currentTodoListId)
-                currentTodoList.todoList.filter(todo => todo.id !== action.payload.todoId)
+                let currentTodoList = takeCurrentTodoList(state.todoLists, state.currentTodoListId)
+                currentTodoList.value = currentTodoList.value.filter(todo => todo.id !== action.payload.todoId)
             } catch (e) {
                 alert(e)
             }
         },
         deleteTodoList: (state, action: PayloadAction<IMarkTodoOrDeleteTodo>) => {
-            state.todoLists.filter(todoList => todoList.todoListId !== action.payload.todoId)
+            state.todoLists = state.todoLists.filter(todoList => todoList.id !== action.payload.todoId)
+        },
+        changeFilter: (state, action: PayloadAction<IChangeFilter>) => {
+            let key: keyof IFilter
+            for (key in state.filters) {
+                if (key === action.payload.filter)
+                    state.filters[key] = !state.filters[key]
+            }
         }
     }
 })
 
 const takeCurrentTodoList = (todoLists: ITodoList[], currentTodoListId: string) => {
-    const currentTodoList = todoLists.find(todoList => todoList.todoListId === currentTodoListId)
+    const currentTodoList = todoLists.find(todoList => todoList.id === currentTodoListId)
     if (currentTodoList)
         return currentTodoList
     else
@@ -109,7 +120,7 @@ interface IThunkApi {
 export const addTodoList = createAsyncThunk<Promise<string>,
     string,
     IThunkApi>('todo/addTodoList', async (todoListName, thunkAPI) => {
-    if (thunkAPI.getState().todo.todoLists.find(todoList => todoListName === todoList.todoListName))
+    if (thunkAPI.getState().todo.todoLists.find(todoList => todoListName === todoList.name))
         return `Todo List with name ${todoListName} already exists`
     else
         thunkAPI.dispatch(todoActions.addTodoList({todoListName}))
@@ -120,6 +131,7 @@ export const deleteTodoList = createAsyncThunk<Promise<void>,
     void,
     IThunkApi>('todo/deleteTodoList', async (arg, thunkAPI) => {
     const tempTodoListId = thunkAPI.getState().todo.currentTodoListId
-    thunkAPI.dispatch(todoActions.changeCurrentTodoListId({newCurrentId: thunkAPI.getState().todo.todoLists[1].todoListId}))
-    thunkAPI.dispatch(todoActions.deleteTodo({todoId: tempTodoListId}))
+    debugger
+    await thunkAPI.dispatch(todoActions.deleteTodoList({todoId: tempTodoListId}))
+    thunkAPI.dispatch(todoActions.changeCurrentTodoListId({newCurrentId: thunkAPI.getState().todo.todoLists[0].id}))
 })
