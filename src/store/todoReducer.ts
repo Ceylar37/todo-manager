@@ -7,16 +7,16 @@ export interface ITodo {
     title: string,
     completed: boolean
 }
-
 export interface ITodoList {
     id: string,
     name: string,
     value: ITodo[]
 }
 export interface IFilter {
-    'Only Completed': boolean,
-    'Only Not Completed': boolean
+    name: 'Only Completed' | 'Only Not Completed',
+    isFilterOn: boolean
 }
+
 export const firstTodoListId = v1()
 export const secondTodoListId = v1()
 
@@ -34,17 +34,17 @@ export const todoInitialState = {
             ]}
     ] as ITodoList[],
     currentTodoListId: firstTodoListId as string,
-    filters: {
-        'Only Completed': false,
-        'Only Not Completed': false
-    } as IFilter
+    filters: [
+        {name: 'Only Completed', isFilterOn: false},
+        {name: 'Only Not Completed', isFilterOn: false},
+    ] as IFilter[]
 }
 
 interface IAddTodoList {todoListName: string,}
 interface IAddTodoToList {todoTitle: string}
 interface IChangeCurrentTodoListId {newCurrentId: string}
 interface IMarkTodoOrDeleteTodo {todoId: string}
-interface IChangeFilter {filter: string}
+interface IChangeFilter {filterName: string}
 
 const todoSlice = createSlice({
     name: 'todo',
@@ -85,11 +85,9 @@ const todoSlice = createSlice({
             state.todoLists = state.todoLists.filter(todoList => todoList.id !== action.payload.todoId)
         },
         changeFilter: (state, action: PayloadAction<IChangeFilter>) => {
-            let key: keyof IFilter
-            for (key in state.filters) {
-                if (key === action.payload.filter)
-                    state.filters[key] = !state.filters[key]
-            }
+            state.filters.forEach(filter => {
+                filter.name === action.payload.filterName ? filter.isFilterOn = !filter.isFilterOn : filter.isFilterOn = false
+            })
         }
     }
 })
@@ -122,8 +120,10 @@ export const addTodoList = createAsyncThunk<Promise<string>,
     IThunkApi>('todo/addTodoList', async (todoListName, thunkAPI) => {
     if (thunkAPI.getState().todo.todoLists.find(todoList => todoListName === todoList.name))
         return `Todo List with name ${todoListName} already exists`
-    else
-        thunkAPI.dispatch(todoActions.addTodoList({todoListName}))
+    else {
+        await thunkAPI.dispatch(todoActions.addTodoList({todoListName}))
+        thunkAPI.dispatch(todoActions.changeCurrentTodoListId({newCurrentId: thunkAPI.getState().todo.todoLists[thunkAPI.getState().todo.todoLists.length - 1].id}))
+    }
     return ''
 })
 
@@ -131,7 +131,6 @@ export const deleteTodoList = createAsyncThunk<Promise<void>,
     void,
     IThunkApi>('todo/deleteTodoList', async (arg, thunkAPI) => {
     const tempTodoListId = thunkAPI.getState().todo.currentTodoListId
-    debugger
     await thunkAPI.dispatch(todoActions.deleteTodoList({todoId: tempTodoListId}))
     thunkAPI.dispatch(todoActions.changeCurrentTodoListId({newCurrentId: thunkAPI.getState().todo.todoLists[0].id}))
 })

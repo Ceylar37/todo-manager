@@ -1,7 +1,7 @@
 import React, {useState} from 'react'
 import {Button, Col, Divider, Layout, List, Row} from "antd"
 import {useTypedSelector} from "../../utils/hooks"
-import {getCurrentTodoList} from "../../utils/selectors"
+import {getCurrentFilter, getCurrentTodoListName, getFilteredTodos, getTodoListsLength} from "../../utils/selectors"
 import AddNewItemFormModal from "../common/AddNewItemFormModal/AddNewItemFormModal";
 import {useDispatch} from "react-redux";
 import {AppDispatch} from "../../store";
@@ -11,7 +11,10 @@ const {Content} = Layout
 
 const MyContent = () => {
 
-    const currentTodoList = useTypedSelector(getCurrentTodoList)
+    const currentTodoListName = useTypedSelector(getCurrentTodoListName)
+    const currentFilter = useTypedSelector(getCurrentFilter)
+    const filteredTodos = useTypedSelector(getFilteredTodos)
+    const todoListsLength = useTypedSelector(getTodoListsLength)
     const [isModalVisible, setIsModalVisible] = useState(false)
     const dispatch = useDispatch<AppDispatch>()
     const onClickHandler = () => {
@@ -25,29 +28,32 @@ const MyContent = () => {
     return (
         <Content style={{margin: '24px 16px 0'}}>
             <div className="site-layout-background" style={{padding: 24, minHeight: 360}}>
-                <Divider orientation="left">
-                    <strong>
-                        {currentTodoList?.name}
-                    </strong>
-                    <Button type="link" danger onClick={() => {
-                        dispatch(deleteTodoList())
-                    }}>
-                        Delete this
-                    </Button>
-                </Divider>
-                <List
-                    size="large"
-                    footer={<Button style={{padding: 0}} type={'link'} onClick={onClickHandler}>Add new todo</Button>}
-                    bordered
-                    dataSource={currentTodoList?.value}
-                    renderItem={item =>
-                        <List.Item key={item.id}>
-                            <Todo id={item.id} completed={item.completed} title={item.title}/>
-                        </List.Item>}
-                />
+                {todoListsLength ? <>
+                    <Divider orientation="left">
+                        <strong>
+                            {currentTodoListName}{currentFilter && (' | ' + currentFilter)}
+                        </strong>
+                        <Button type="link" danger onClick={() => {
+                            dispatch(deleteTodoList())
+                        }}>
+                            Delete this list
+                        </Button>
+                    </Divider>
+                    <List
+                        size="large"
+                        footer={<Button style={{padding: 0}} type={'link'} onClick={onClickHandler}>Add new
+                            todo</Button>}
+                        bordered
+                        dataSource={filteredTodos}
+                        renderItem={item =>
+                            <List.Item key={item.id}>
+                                <Todo id={item.id} completed={item.completed} title={item.title}/>
+                            </List.Item>}
+                    />
+                    <AddNewItemFormModal title={'Add new todo'} isModalVisible={isModalVisible}
+                                         setIsModalVisible={setIsModalVisible} addFunctionWrapper={boundedAddTodo}/>
+                </> : <div>You don't have any todolist</div>}
             </div>
-            <AddNewItemFormModal title={'Add new todo'} isModalVisible={isModalVisible}
-                                 setIsModalVisible={setIsModalVisible} addFunctionWrapper={boundedAddTodo}/>
         </Content>
     )
 }
@@ -62,14 +68,20 @@ const Todo: React.FC<IProps> = ({title, completed, id}) => {
 
     const dispatch = useDispatch<AppDispatch>()
 
+    const onDeleteHandler = () => {
+        dispatch(todoActions.deleteTodo({todoId: id}))
+    }
+
+    const onMarkTodoHandler = () => {
+        dispatch(todoActions.markTodo({todoId: id}))
+    }
+
     return (
         <Row style={{width: '100%'}} justify={'space-between'}>
             <Col style={{textDecoration: completed ? 'line-through' : 'none'}} span={''}>
-                {title}
+                <span style={{cursor: 'pointer'}} onClick={onMarkTodoHandler}>{title}</span>
             </Col>
-            <Col style={{color: "red", cursor: "pointer"}} onClick={() => {
-                dispatch(todoActions.deleteTodo({todoId: id}))
-            }}>
+            <Col style={{color: "red", cursor: "pointer"}} onClick={onDeleteHandler}>
                 x
             </Col>
         </Row>
