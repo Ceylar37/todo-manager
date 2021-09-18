@@ -37,7 +37,8 @@ export const todoInitialState = {
     filters: [
         {name: 'Only Completed', isFilterOn: false},
         {name: 'Only Not Completed', isFilterOn: false},
-    ] as IFilter[]
+    ] as IFilter[],
+    filterTerm: ''
 }
 
 interface IAddTodoList {todoListName: string,}
@@ -45,6 +46,7 @@ interface IAddTodoToList {todoTitle: string}
 interface IChangeCurrentTodoListId {newCurrentId: string}
 interface IMarkTodoOrDeleteTodo {todoId: string}
 interface IChangeFilter {filterName: string}
+interface IChangeFilterTerm {newFilterTerm: string}
 
 const todoSlice = createSlice({
     name: 'todo',
@@ -88,6 +90,9 @@ const todoSlice = createSlice({
             state.filters.forEach(filter => {
                 filter.name === action.payload.filterName ? filter.isFilterOn = !filter.isFilterOn : filter.isFilterOn = false
             })
+        },
+        changeFilterTerm: (state, action: PayloadAction<IChangeFilterTerm>) => {
+            state.filterTerm = action.payload.newFilterTerm
         }
     }
 })

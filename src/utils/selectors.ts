@@ -5,7 +5,7 @@ export const getTodoPage = (state: RootState) => state.todo
 export const getFilters = (state: RootState) => state.todo.filters
 export const getCurrentTodoListId = (state: RootState) => state.todo.currentTodoListId
 export const getTodoListsLength = (state: RootState) => state.todo.todoLists.length
-
+export const getFilterTerm = (state: RootState) => state.todo.filterTerm
 export const getCurrentTodoList = createSelector(
     getTodoPage,
     getCurrentTodoListId,
@@ -35,4 +35,10 @@ export const getFilteredTodos = createSelector(
                 return todoList?.value
         }
     }
+)
+
+export const getTermFilteredTodos = createSelector(
+    getFilterTerm,
+    getFilteredTodos,
+    (filterTerm, filteredTodos) => filteredTodos?.filter(todo => todo.title.toLowerCase().indexOf(filterTerm) + 1)
 )

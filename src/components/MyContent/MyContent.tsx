@@ -1,7 +1,7 @@
 import React, {useState} from 'react'
 import {Button, Col, Divider, Layout, List, Row} from "antd"
 import {useTypedSelector} from "../../utils/hooks"
-import {getCurrentFilter, getCurrentTodoListName, getFilteredTodos, getTodoListsLength} from "../../utils/selectors"
+import {getCurrentFilter, getCurrentTodoListName, getTermFilteredTodos, getTodoListsLength} from "../../utils/selectors"
 import AddNewItemFormModal from "../common/AddNewItemFormModal/AddNewItemFormModal";
 import {useDispatch} from "react-redux";
 import {AppDispatch} from "../../store";
@@ -13,7 +13,7 @@ const MyContent = () => {
 
     const currentTodoListName = useTypedSelector(getCurrentTodoListName)
     const currentFilter = useTypedSelector(getCurrentFilter)
-    const filteredTodos = useTypedSelector(getFilteredTodos)
+    const filteredTodos = useTypedSelector(getTermFilteredTodos)
     const todoListsLength = useTypedSelector(getTodoListsLength)
     const [isModalVisible, setIsModalVisible] = useState(false)
     const dispatch = useDispatch<AppDispatch>()
